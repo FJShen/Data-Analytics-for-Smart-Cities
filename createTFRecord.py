@@ -1,73 +1,101 @@
-from PIL import Image
+"""
+Usage:
+  # From tensorflow/models/
+  # Create train data:
+  python generate_tfrecord.py --csv_input=data/train_labels.csv  --output_path=train.record
+  # Create test data:
+  python generate_tfrecord.py --csv_input=data/test_labels.csv  --output_path=test.record
+"""
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+
+import os
+import io
+import pandas as pd
 import tensorflow as tf
-import re
+
+from PIL import Image
 from object_detection.utils import dataset_util
+from collections import namedtuple, OrderedDict
 
-def getRectInfo():
-    with open("rectinfo.csv") as rectInfo:
-        fileLines = rectInfo.readlines()
+flags = tf.app.flags
+flags.DEFINE_string('csv_input', '', 'Path to the CSV input')
+flags.DEFINE_string('output_path', '', 'Path to output TFRecord')
+FLAGS = flags.FLAGS
 
-    lineList = []
-    paths = []
+
+# TO-DO replace this with label map
+def class_text_to_int(row_label):
+    if row_label == 'raccoon':
+        return 1
+    else:
+        None
+
+
+def split(df, group):
+    data = namedtuple('data', ['filename', 'object'])
+    gb = df.groupby(group)
+    return [data(filename, gb.get_group(x)) for filename, x in zip(gb.groups.keys(), gb.groups)]
+
+
+def create_tf_example(group, path):
+    with tf.gfile.GFile(os.path.join(path, '{}'.format(group.filename)), 'rb') as fid:
+        encoded_jpg = fid.read()
+    encoded_jpg_io = io.BytesIO(encoded_jpg)
+    image = Image.open(encoded_jpg_io)
+    width, height = image.size
+
+    filename = group.filename.encode('utf8')
+    image_format = b'jpg'
+    xmins = []
+    xmaxs = []
+    ymins = []
+    ymaxs = []
+    classes_text = []
     classes = []
-    rect_x = []
-    rect_y = []
-    rect_w = []
-    rect_h = []
 
-    for i in range(1,len(fileLines)):
-        line = fileLines[i].split(",")
+    for index, row in group.object.iterrows():
+        xmins.append(row['xmin'] / width)
+        xmaxs.append(row['xmax'] / width)
+        ymins.append(row['ymin'] / height)
+        ymaxs.append(row['ymax'] / height)
+        classes_text.append(row['class'].encode('utf8'))
+        classes.append(class_text_to_int(row['class']))
 
-        if line[1] is '1' or line[1] is not '2':
-            paths.append(re.sub(r"\\", "/", line[0]))
-            classes.append(line[1]) 
-            rect_x.append(line[2])  
-            rect_y.append(line[3])
-            rect_w.append(line[4])
-            rect_h.append(line[5])
-
-    return paths, classes, rect_x, rect_y, rect_w, rect_h
-
-def getImageFile(filename):
-    im = Image.open(filename)
-    width, height = im.size
-    return None
-
-def create_tf_example(example):
-  # TODO: Populate the following variables from your example.
-  height = None # Image height
-  width = None # Image width
-  filename = None # Filename of the image. Empty if image is not from file
-  encoded_image_data = None # Encoded image bytes
-  image_format = None # b'jpeg' or b'png'
-
-  xmins = [] # List of normalized left x coordinates in bounding box (1 per box)
-  xmaxs = [] # List of normalized right x coordinates in bounding box
-             # (1 per box)
-  ymins = [] # List of normalized top y coordinates in bounding box (1 per box)
-  ymaxs = [] # List of normalized bottom y coordinates in bounding box
-             # (1 per box)
-  classes_text = [] # List of string class name of bounding box (1 per box)
-  classes = [] # List of integer class id of bounding box (1 per box)
-
-  tf_example = tf.train.Example(features=tf.train.Features(feature={
-      'image/height': dataset_util.int64_feature(height),
-      'image/width': dataset_util.int64_feature(width),
-      'image/filename': dataset_util.bytes_feature(filename),
-      'image/source_id': dataset_util.bytes_feature(filename),
-      'image/encoded': dataset_util.bytes_feature(encoded_image_data),
-      'image/format': dataset_util.bytes_feature(image_format),
-      'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
-      'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
-      'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
-      'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
-      'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
-      'image/object/class/label': dataset_util.int64_list_feature(classes),
-  }))
-  return tf_example
+    tf_example = tf.train.Example(features=tf.train.Features(feature={
+        'image/height': dataset_util.int64_feature(height),
+        'image/width': dataset_util.int64_feature(width),
+        'image/filename': dataset_util.bytes_feature(filename),
+        'image/source_id': dataset_util.bytes_feature(filename),
+        'image/encoded': dataset_util.bytes_feature(encoded_jpg),
+        'image/format': dataset_util.bytes_feature(image_format),
+        'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
+        'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
+        'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
+        'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
+        'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
+        'image/object/class/label': dataset_util.int64_list_feature(classes),
+    }))
+    return tf_example
 
 
+def main(_):
+    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
+    path = os.path.join(os.getcwd(), 'images')
+    examples = pd.read_csv(FLAGS.csv_input)
+    grouped = split(examples, 'filename')
+    for group in grouped:
+        tf_example = create_tf_example(group, path)
+        writer.write(tf_example.SerializeToString())
 
-if __name__ == "__main__":
-    paths, classes, rect_x, rect_y, rect_w, rect_h = getRectInfo()
+    writer.close()
+    output_path = os.path.join(os.getcwd(), FLAGS.output_path)
+    print('Successfully created the TFRecords: {}'.format(output_path))
+
+
+if __name__ == '__main__':
+    tf.app.run()
+
+
 
