@@ -51,6 +51,8 @@ def generateDataCSV(train_data, test_data):
             wr.writerow(data)
 
     with open("test_labels.csv", "w+") as testFile:
+        testFile.write("filename,width,height,class,xmin,ymin,xmax,ymax\n")
+
         wr = csv.writer(testFile, quoting=csv.QUOTE_ALL)
 
         for data in test_data:
