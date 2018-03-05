@@ -34,7 +34,7 @@ def class_text_to_int(row_label):
     if row_label == '1':
         return 1
     if row_label == '2':
-        return 2
+        return 1
     else:
         pass
 
