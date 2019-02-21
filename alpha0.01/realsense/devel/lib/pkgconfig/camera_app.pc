@@ -1,0 +1,8 @@
+prefix=/home/nvidia/Desktop/releases/alpha0.01/realsense/devel
+
+Name: camera_app
+Description: Description of camera_app
+Version: 0.0.0
+Cflags: -I/home/nvidia/Desktop/releases/alpha0.01/realsense/src/camera_app/include
+Libs: -L/home/nvidia/Desktop/releases/alpha0.01/realsense/devel/lib 
+Requires: 

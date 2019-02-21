@@ -1,0 +1,2 @@
+camera_app
+-DCATKIN_DEVEL_PREFIX=/home/nvidia/Desktop/releases/alpha0.01/realsense/devel -DCMAKE_INSTALL_PREFIX=/home/nvidia/Desktop/releases/alpha0.01/realsense/install -G Unix Makefiles
