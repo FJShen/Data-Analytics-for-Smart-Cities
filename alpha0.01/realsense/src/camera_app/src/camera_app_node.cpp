@@ -35,33 +35,34 @@ int main(int argc, char** argv) {
     std::cout<<"frames received\n";
     rs2::depth_frame depth = frames.get_depth_frame();
    
-    rs2::frame color = frames.get_color_frame();
+    //rs2::video_frame color = frames.get_color_frame();
 
-	unsigned int width = depth.get_width();
-	unsigned int height = depth.get_height();
-  //unsigned int width_color= color.get_width();
-  //unsigned int height_color= color.get_height();
-        const uint16_t* pixel16_ptr =(const uint16_t*) (depth.get_data()) ;
-        const uint8_t* pixel_ptr = (const uint8_t*)(depth.get_data());
-        //const uint8_t* pixel_ptr_color = (const uint8_t*)(color.get_data());
-	unsigned int pixel_amount = width*height;
-	//unsigned int pixel_amount_color = width_color*height_color;
+    unsigned int width = depth.get_width();
+    unsigned int height = depth.get_height();
+    const uint16_t* pixel16_ptr =(const uint16_t*) (depth.get_data());
+    //const uint16_t* pixel16_ptr_color = (const uint16_t*) (color.get_data());
+    const uint8_t* pixel_ptr = (const uint8_t*)(depth.get_data());
+    //const uint8_t* pixel_ptr_color = (const uint8_t*)(color.get_data());
+    //unsigned int width_color = color.get_width();
+    //unsigned int height_color = color.get_height();
+    unsigned int pixel_amount = width*height;
+    //unsigned int pixel_amount_color = width_color*height_color;
 	
-	std::vector<uint8_t> depth_image(2*pixel_amount);
-	//	std::vector<uint8_t> color_image(2*pixel_amount);
-	memcpy(&depth_image[0], pixel_ptr, 2*pixel_amount*sizeof(uint8_t));
-	//	memcpy(&color_image[0], pixel_ptr_color, 2*pixel_amount*sizeof(uint8_t));
-	depth_msg.data = depth_image;
-	depth_msg.height = height;
-	depth_msg.width = width;
-	depth_msg.encoding = sensor_msgs::image_encodings::MONO16;
-	depth_msg.step = width*2; //each pixel is 2 bytes, so step, which stands for row length in bytes, should be two times "width".
+    std::vector<uint8_t> depth_image(2*pixel_amount);
+    //std::vector<uint8_t> color_image(2*pixel_amount);
+    memcpy(&depth_image[0], pixel_ptr, 2*pixel_amount*sizeof(uint8_t));
+    //memcpy(&color_image[0], pixel_ptr_color, 2*pixel_amount*sizeof(uint8_t));
+    depth_msg.data = depth_image;
+    depth_msg.height = height;
+    depth_msg.width = width;
+    depth_msg.encoding = sensor_msgs::image_encodings::MONO16;
+    depth_msg.step = width*2; //each pixel is 2 bytes, so step, which stands for row length in bytes, should be two times "width".
 	
-	//	rgb_msg.data = color_image;
-	//	rgb_msg.height = height;
-	//	rgb_msg.width = width;
-	//	rgb_msg.encoding = sensor_msgs::image_encodings::RGB16;
-	//	rgb_msg.step = width*2;   
+    //rgb_msg.data = color_image;
+    //rgb_msg.height = height;
+    //rgb_msg.width = width;
+    //rgb_msg.encoding = sensor_msgs::image_encodings::RGB16;
+    //rgb_msg.step = width*2;   
     /*
       END DEFINE SENSOR MESSAGE CONTENTS
     */
@@ -70,11 +71,11 @@ int main(int argc, char** argv) {
 	uint8_t lower = depth_image[360*2*1280+640*2+1];
 	uint16_t pixel = ((uint16_t)(higher)<<8) + (uint16_t)(lower);
 	*/
-	std::cout<<pixel16_ptr[1280*360+640]<<"  ";
+    //std::cout<<pixel16_ptr[1280*360+640]<<"  ";
 	//	std::cout<<pixel<<std::endl;
 
     depth_pub.publish(depth_msg);
-    //  rgb_pub.publish(rgb_msg);
+    //rgb_pub.publish(rgb_msg);
 
 
     ros::spinOnce();
