@@ -17,10 +17,11 @@ def gps_callback(data):
 def rgb_callback(data): 
         print("received rgb image ")       
         br = CvBridge()
-        im = br.imgmsg_to_cv2(data, desired_encoding="passthrough")
+        im = br.imgmsg_to_cv2(data, desired_encoding="bgr8")
         #cv2.imwrite("/media/nvidia/ExtremeSSD/rgb_images/" + str(time.time()) + ".jpg", im)
         print(im.shape)
-        im.tofile("/media/nvidia/ExtremeSSD/rgb_images/xxx.txt", sep="\t", format="%s")
+        # im.tofile("/media/nvidia/ExtremeSSD/rgb_images/xxx.txt", sep="\t", format="%s")
+        cv2.imwrite("/media/nvidia/ExtremeSSD/rgb_images/xxx.png", im)
 
 def depth_callback(data):
         # print("ROS sending delay: " + str(time.time() * (10 ** 3) - (data.header.stamp.secs * (10 ** 3) + data.header.stamp.nsecs * (10 ** -6))) + "ms")
@@ -29,7 +30,7 @@ def depth_callback(data):
         im = br.imgmsg_to_cv2(data, desired_encoding="mono16")
         # im.tofile("/media/nvidia/ExtremeSSD/depth_images/xxx.txt", sep="\t", format="%s")
         filename = "/media/nvidia/ExtremeSSD/depth_images/" + str(timeit.default_timer()) + ".npz"
-        save_time = timeit.timeit(partial(np.savez_compressed, filename, im))
+        save_time = timeit.Timer(partial(np.savez_compressed, filename, im)).timeit()
         print("npz save time: " + str(save_time))
         print(filename)
 
@@ -37,7 +38,7 @@ def master():
 	rospy.init_node('master', anonymous=True)
         # rospy.Subscriber('gps_meas', Odometry, gps_callback)
         rospy.Subscriber('RGB', Image, rgb_callback)
-        rospy.Subscriber('depth', Image, depth_callback)
+        # rospy.Subscriber('depth', Image, depth_callback)
         rospy.spin()
 	
 
