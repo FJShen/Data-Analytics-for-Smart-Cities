@@ -21,7 +21,10 @@ int main(int argc, char** argv) {
   //rs2::depth_frame depth;
   
   rs2::pipeline p;
-  p.start();
+  rs2::config c;
+  c.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
+  c.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_RGB8, 30);
+  p.start(c);
 
   uint32_t seq = 0;
   while(ros::ok()) {
@@ -48,6 +51,8 @@ int main(int argc, char** argv) {
 
     unsigned int width_color = color.get_width();
     unsigned int height_color = color.get_height();
+
+    std::cout<<"w/h/w_c/h_c="<<width<<" "<<height<<" "<<width_color<<" "<<height_color<<"\n";
     
     const uint8_t* pixel_ptr = (const uint8_t*)(depth.get_data());
     const uint8_t* pixel_ptr_color = (const uint8_t*)(color.get_data());
@@ -57,9 +62,9 @@ int main(int argc, char** argv) {
     unsigned int pixel_amount_color = width_color*height_color;
 	
     std::vector<uint8_t> depth_image(2*pixel_amount);
-    std::vector<uint8_t> color_image(2*pixel_amount_color);
+    std::vector<uint8_t> color_image(3*pixel_amount_color);
     memcpy(&depth_image[0], pixel_ptr, 2*pixel_amount*sizeof(uint8_t));
-    memcpy(&color_image[0], pixel_ptr_color, 2*pixel_amount_color*sizeof(uint8_t));
+    memcpy(&color_image[0], pixel_ptr_color, 3*pixel_amount_color*sizeof(uint8_t));
     depth_msg.header.seq = seq;
     depth_msg.header.stamp = ros::Time::now();
     depth_msg.data = depth_image;
@@ -73,8 +78,8 @@ int main(int argc, char** argv) {
     rgb_msg.data = color_image;
     rgb_msg.height = height_color;
     rgb_msg.width = width_color;
-    rgb_msg.encoding = sensor_msgs::image_encodings::TYPE_16UC1;
-    rgb_msg.step = width_color*2;   
+    rgb_msg.encoding = sensor_msgs::image_encodings::RGB8;
+    rgb_msg.step = width_color*3;//each pixel is 3 bytes - red, green, and blue   
     /*
       END DEFINE SENSOR MESSAGE CONTENTS
     */

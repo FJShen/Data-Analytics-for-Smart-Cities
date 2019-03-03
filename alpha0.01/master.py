@@ -4,6 +4,8 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from nav_msgs.msg import Odometry
 import time
+import timeit
+from functools import partial
 import cv2
 import numpy as np
 from cv_bridge import CvBridge
@@ -21,17 +23,14 @@ def rgb_callback(data):
         im.tofile("/media/nvidia/ExtremeSSD/rgb_images/xxx.txt", sep="\t", format="%s")
 
 def depth_callback(data):
-        print("ROS sending delay: " + str(time.time() * (10 ** 3) - (data.header.stamp.secs * (10 ** 3) + data.header.stamp.nsecs * (10 ** -6))) + "ms")
+        # print("ROS sending delay: " + str(time.time() * (10 ** 3) - (data.header.stamp.secs * (10 ** 3) + data.header.stamp.nsecs * (10 ** -6))) + "ms")
         print("seq: " + str(data.header.seq))
         br = CvBridge()
         im = br.imgmsg_to_cv2(data, desired_encoding="mono16")
         # im.tofile("/media/nvidia/ExtremeSSD/depth_images/xxx.txt", sep="\t", format="%s")
-        print(im.shape)
-        timestamp1 = time.time()
-        filename = "/media/nvidia/ExtremeSSD/depth_images/" + str(timestamp1) + ".npz"
-        np.savez_compressed(filename, im=im)
-        timestamp2 = time.time()
-        print("npz save time: " + str((timestamp2 - timestamp1) * (10 ** 3)) + "ms")
+        filename = "/media/nvidia/ExtremeSSD/depth_images/" + str(timeit.default_timer()) + ".npz"
+        save_time = timeit.Timer(partial(np.savez_compressed(filename, im)))
+        print("npz save time: " + str(save_time))
         print(filename)
 
 def master():
