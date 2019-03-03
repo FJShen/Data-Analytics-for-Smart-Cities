@@ -63,24 +63,6 @@ def _format_data(data):
 	
     return data
 
-def test(string):
-    pub_data = rospy.Publisher('gps_meas', String, queue_size=1)
-    rate = rospy.Rate(1) # 1hz
-
-    seq = 0
-
-    while not rospy.is_shutdown():
-        try:
-       	     string = "Test"
-
-        except ValueError as e:
-	     print("ValueError")
-             continue
- 
-    	pub_data.publish(string)
-    	rate.sleep()
-    	seq += 1
-
 def talker(gps_meas):
     pub_data = rospy.Publisher('gps_meas', Odometry, queue_size=1)
     rate = rospy.Rate(1) # 1hz

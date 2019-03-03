@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <vector>
+#include <chrono>
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "realsense");
@@ -14,7 +15,7 @@ int main(int argc, char** argv) {
 
   ros::Publisher depth_pub = rs.advertise<sensor_msgs::Image>("depth", 10);
   ros::Publisher rgb_pub = rs.advertise<sensor_msgs::Image>("RGB", 10);
-  ros::Rate loop_rate(1);
+  ros::Rate loop_rate(5);
 
   rs2::frameset frames;
   //rs2::depth_frame depth;
@@ -22,7 +23,9 @@ int main(int argc, char** argv) {
   rs2::pipeline p;
   p.start();
 
+  uint32_t seq = 0;
   while(ros::ok()) {
+    std::cout << "Seq: " << seq << "\n";
     sensor_msgs::Image depth_msg;
     sensor_msgs::Image rgb_msg;
 
@@ -31,8 +34,12 @@ int main(int argc, char** argv) {
     */
     
     std::cout<<"waiting for frames\n";
+    auto start = std::chrono::high_resolution_clock::now();
     frames = p.wait_for_frames();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = end - start;
     std::cout<<"frames received\n";
+    std::cout << "Time to collect depth frame data: " << elapsed.count() << "ms\n";
     rs2::depth_frame depth = frames.get_depth_frame();
    
     //rs2::video_frame color = frames.get_color_frame();
@@ -52,6 +59,8 @@ int main(int argc, char** argv) {
     //std::vector<uint8_t> color_image(2*pixel_amount);
     memcpy(&depth_image[0], pixel_ptr, 2*pixel_amount*sizeof(uint8_t));
     //memcpy(&color_image[0], pixel_ptr_color, 2*pixel_amount*sizeof(uint8_t));
+    depth_msg.header.seq = seq;
+    depth_msg.header.stamp = ros::Time::now();
     depth_msg.data = depth_image;
     depth_msg.height = height;
     depth_msg.width = width;
@@ -79,6 +88,7 @@ int main(int argc, char** argv) {
 
 
     ros::spinOnce();
+    seq++;
 
     loop_rate.sleep();
   }

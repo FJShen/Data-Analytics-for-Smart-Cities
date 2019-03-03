@@ -18,11 +18,17 @@ def rgb_callback(data):
         cv2.imwrite("/media/nvidia/ExtremeSSD/rgb_images/" + str(time.time()) + ".jpg", im)
 
 def depth_callback(data):
+        print("ROS sending delay: " + str(time.time() * (10 ** 3) - (data.header.stamp.secs * (10 ** 3) + data.header.stamp.nsecs * (10 ** -6))) + "ms")
+        print("seq: " + str(data.header.seq))
         br = CvBridge()
         im = br.imgmsg_to_cv2(data, desired_encoding="mono16")
-        print(im.shape,type(im))
-        im.tofile("/media/nvidia/ExtremeSSD/depth_images/xxx.txt", sep="\t", format="%s")
-        #cv2.imwrite("/media/nvidia/ExtremeSSD/depth_images/" + str(time.time()) + ".jpg", im)
+        # im.tofile("/media/nvidia/ExtremeSSD/depth_images/xxx.txt", sep="\t", format="%s")
+        timestamp1 = time.time()
+        filename = "/media/nvidia/ExtremeSSD/depth_images/" + str(timestamp1) + ".npz"
+        np.savez_compressed(filename, im=im)
+        timestamp2 = time.time()
+        print("npz save time: " + str((timestamp2 - timestamp1) * (10 ** 3)) + "ms")
+        print(filename)
 
 def master():
 	rospy.init_node('master', anonymous=True)
