@@ -29,7 +29,7 @@ def depth_callback(data):
         im = br.imgmsg_to_cv2(data, desired_encoding="mono16")
         # im.tofile("/media/nvidia/ExtremeSSD/depth_images/xxx.txt", sep="\t", format="%s")
         filename = "/media/nvidia/ExtremeSSD/depth_images/" + str(timeit.default_timer()) + ".npz"
-        save_time = timeit.Timer(partial(np.savez_compressed(filename, im)))
+        save_time = timeit.timeit(partial(np.savez_compressed, filename, im))
         print("npz save time: " + str(save_time))
         print(filename)
 
