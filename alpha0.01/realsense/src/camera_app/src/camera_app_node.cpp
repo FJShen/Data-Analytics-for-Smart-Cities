@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;
     std::cout<<"frames received\n";
-    std::cout << "Time to collect depth frame data: " << elapsed.count() << "ms\n";
+    std::cout << "Start: " << elapsed.count() << "ms\n";
     rs2::depth_frame depth = frames.get_depth_frame();
     rs2::video_frame color = frames.get_color_frame();
 
