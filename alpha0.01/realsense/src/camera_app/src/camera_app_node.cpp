@@ -9,6 +9,8 @@
 #include <vector>
 #include <chrono>
 
+inline void print_time_stamp(std::string comment="--");
+
 int main(int argc, char** argv) {
   ros::init(argc, argv, "realsense");
   ros::NodeHandle rs;
@@ -28,7 +30,8 @@ int main(int argc, char** argv) {
 
   uint32_t seq = 0;
   while(ros::ok()) {
-    std::cout << "Seq: " << seq << "\n";
+    std::cout << "Seq: " << seq << "\t";
+    print_time_stamp("start");
     sensor_msgs::Image depth_msg;
     sensor_msgs::Image rgb_msg;
 
@@ -36,13 +39,13 @@ int main(int argc, char** argv) {
       DEFINE SENSOR MESSAGE CONTENTS
     */
     
-    std::cout<<"waiting for frames\n";
-    auto start = std::chrono::high_resolution_clock::now();
+    //std::cout<<"waiting for frames";
+    //auto start = std::chrono::high_resolution_clock::now();
     frames = p.wait_for_frames();
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed = end - start;
-    std::cout<<"frames received\n";
-    std::cout << "Start: " << elapsed.count() << "ms\n";
+    //auto end = std::chrono::high_resolution_clock::now();
+    //std::chrono::duration<double, std::milli> elapsed = end - start;
+    print_time_stamp("gt_frm");
+    //std::cout << "Waited " << elapsed.count() << "ms\t";
     rs2::depth_frame depth = frames.get_depth_frame();
     rs2::video_frame color = frames.get_color_frame();
 
@@ -52,7 +55,7 @@ int main(int argc, char** argv) {
     unsigned int width_color = color.get_width();
     unsigned int height_color = color.get_height();
 
-    std::cout<<"w/h/w_c/h_c="<<width<<" "<<height<<" "<<width_color<<" "<<height_color<<"\n";
+    //std::cout<<"w/h/w_c/h_c="<<width<<" "<<height<<" "<<width_color<<" "<<height_color<<"\t";
     
     const uint8_t* pixel_ptr = (const uint8_t*)(depth.get_data());
     const uint8_t* pixel_ptr_color = (const uint8_t*)(color.get_data());
@@ -65,6 +68,8 @@ int main(int argc, char** argv) {
     std::vector<uint8_t> color_image(3*pixel_amount_color);
     memcpy(&depth_image[0], pixel_ptr, 2*pixel_amount*sizeof(uint8_t));
     memcpy(&color_image[0], pixel_ptr_color, 3*pixel_amount_color*sizeof(uint8_t));
+    print_time_stamp("cpy_ok");
+    
     depth_msg.header.seq = seq;
     depth_msg.header.stamp = ros::Time::now();
     depth_msg.data = depth_image;
@@ -79,7 +84,9 @@ int main(int argc, char** argv) {
     rgb_msg.height = height_color;
     rgb_msg.width = width_color;
     rgb_msg.encoding = sensor_msgs::image_encodings::RGB8;
-    rgb_msg.step = width_color*3;//each pixel is 3 bytes - red, green, and blue   
+    rgb_msg.step = width_color*3;//each pixel is 3 bytes - red, green, and blue
+
+    print_time_stamp("msg_ok");
     /*
       END DEFINE SENSOR MESSAGE CONTENTS
     */
@@ -94,10 +101,21 @@ int main(int argc, char** argv) {
     depth_pub.publish(depth_msg);
     rgb_pub.publish(rgb_msg);
 
+    print_time_stamp("pblsh_ok");
 
     ros::spinOnce();
     seq++;
 
     loop_rate.sleep();
+
+    //final line
+    std::cout<<std::endl;
   }
+}
+
+
+//this function prints a short comment plus the timestamp in [us] since epoch to the screen
+//for sake of a clean terminal, please make the comment as shrt as pssbl!
+inline void print_time_stamp(std::string comment){
+  std::cout<< comment<<" "<<std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()<<"\t";
 }
