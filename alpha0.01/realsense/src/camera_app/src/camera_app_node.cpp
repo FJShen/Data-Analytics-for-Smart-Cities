@@ -9,23 +9,26 @@
 #include <vector>
 #include <chrono>
 
+#define FPS 60 //{15, 30, 60, 90}
+//#define PRNT_T_STMP //controls printing timestamps to screen or not
+
 inline void print_time_stamp(std::string comment="--");
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "realsense");
   ros::NodeHandle rs;
 
-  ros::Publisher depth_pub = rs.advertise<sensor_msgs::Image>("depth", 10);
-  ros::Publisher rgb_pub = rs.advertise<sensor_msgs::Image>("RGB", 10);
-  ros::Rate loop_rate(5);
+  ros::Publisher depth_pub = rs.advertise<sensor_msgs::Image>("depth", 8);
+  ros::Publisher rgb_pub = rs.advertise<sensor_msgs::Image>("RGB", 8);
+  ros::Rate loop_rate(FPS);
 
   rs2::frameset frames;
   //rs2::depth_frame depth;
   
   rs2::pipeline p;
   rs2::config c;
-  c.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
-  c.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_RGB8, 30);
+  c.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, FPS);
+  c.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_RGB8, (FPS>60)?60:FPS);//according to Intel RS documentation, the max FPS of rgb stream is 60 
   p.start(c);
 
   uint32_t seq = 0;
@@ -117,5 +120,8 @@ int main(int argc, char** argv) {
 //this function prints a short comment plus the timestamp in [us] since epoch to the screen
 //for sake of a clean terminal, please make the comment as shrt as pssbl!
 inline void print_time_stamp(std::string comment){
+#ifdef PRNT_T_STMP
   std::cout<< comment<<" "<<std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()<<"\t";
+#endif //PRNT_T_STMP
+  return;
 }
