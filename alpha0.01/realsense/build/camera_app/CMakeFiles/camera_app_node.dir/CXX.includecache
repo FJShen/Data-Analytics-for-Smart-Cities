@@ -15,6 +15,8 @@ sensor_msgs/image_encodings.h
 /home/nvidia/Desktop/releases/alpha0.01/realsense/src/camera_app/src/sensor_msgs/image_encodings.h
 sstream
 -
+string
+-
 librealsense2/rs.hpp
 -
 iostream

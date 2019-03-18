@@ -2,6 +2,7 @@
 #include "sensor_msgs/Image.h"
 #include "sensor_msgs/image_encodings.h"
 #include <sstream>
+#include <string>
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <iostream>
 #include <stdio.h>
@@ -10,17 +11,25 @@
 #include <chrono>
 
 #define FPS 60 //{15, 30, 60, 90}
+#define BRANCH 8
+
 //#define PRNT_T_STMP //controls printing timestamps to screen or not
 
-inline void print_time_stamp(std::string comment="--");
+inline void print_time_stamp(std::string = "--"); //default parameter "--"
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "realsense");
   ros::NodeHandle rs;
 
-  ros::Publisher depth_pub = rs.advertise<sensor_msgs::Image>("depth", 8);
+  ros::Publisher depth_pub[BRANCH];
+  for(int i=0; i<BRANCH; i++){
+    std::string topic_name = "depth"+std::to_string(i);
+    depth_pub[i] = rs.advertise<sensor_msgs::Image>(topic_name, 8);
+    }
+
+
   ros::Publisher rgb_pub = rs.advertise<sensor_msgs::Image>("RGB", 8);
-  ros::Rate loop_rate(FPS);
+  ros::Rate loop_rate(FPS*10);
 
   rs2::frameset frames;
   //rs2::depth_frame depth;
@@ -33,7 +42,7 @@ int main(int argc, char** argv) {
 
   uint32_t seq = 0;
   while(ros::ok()) {
-    std::cout << "Seq: " << seq << "\t";
+    std::cout << "Seq: " << seq<< "\t";
     print_time_stamp("start");
     sensor_msgs::Image depth_msg;
     sensor_msgs::Image rgb_msg;
@@ -66,14 +75,15 @@ int main(int argc, char** argv) {
     
     unsigned int pixel_amount = width*height;
     unsigned int pixel_amount_color = width_color*height_color;
-	
+
+    //as for the size of the vector, since depth image is of mono16 format, one pixel corresponds to 2 bytes (2 bytes/channel); RGB is of rgb8 format, where one pixel is consisted of 3 channels, 1 byte for each channel leads to a total of 3 bytes/pixel.
     std::vector<uint8_t> depth_image(2*pixel_amount);
     std::vector<uint8_t> color_image(3*pixel_amount_color);
     memcpy(&depth_image[0], pixel_ptr, 2*pixel_amount*sizeof(uint8_t));
     memcpy(&color_image[0], pixel_ptr_color, 3*pixel_amount_color*sizeof(uint8_t));
     print_time_stamp("cpy_ok");
     
-    depth_msg.header.seq = seq;
+    depth_msg.header.frame_id = std::to_string(seq);
     depth_msg.header.stamp = ros::Time::now();
     depth_msg.data = depth_image;
     depth_msg.height = height;
@@ -81,7 +91,7 @@ int main(int argc, char** argv) {
     depth_msg.encoding = sensor_msgs::image_encodings::MONO16;
     depth_msg.step = width*2; //each pixel is 2 bytes, so step, which stands for row length in bytes, should be two times "width".
 
-    rgb_msg.header.seq = seq;
+    rgb_msg.header.frame_id = std::to_string(seq);
     rgb_msg.header.stamp = ros::Time::now();
     rgb_msg.data = color_image;
     rgb_msg.height = height_color;
@@ -101,16 +111,21 @@ int main(int argc, char** argv) {
     //std::cout<<pixel16_ptr[1280*360+640]<<"  ";
 	//	std::cout<<pixel<<std::endl;
 
-    depth_pub.publish(depth_msg);
+
+    //multiplex to many lines to enhance performance
+    int line_num = seq % BRANCH;
+    depth_pub[line_num].publish(depth_msg);
     rgb_pub.publish(rgb_msg);
+
 
     print_time_stamp("pblsh_ok");
 
     ros::spinOnce();
-    seq++;
 
     loop_rate.sleep();
 
+    seq+=1;
+    
     //final line
     std::cout<<std::endl;
   }
