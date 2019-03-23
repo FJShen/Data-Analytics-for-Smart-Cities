@@ -52,19 +52,18 @@ def depth_callback(data, args):
 
 def master(n):
     
-    rospy.init_node('master' + str(n), anonymous=True)
+    rospy.init_node('master', anonymous=True)
 
     
     #de-multiplex the packages
     #for idx in range(10):
     #	rospy.Subscriber("depth"+str(idx), Image, depth_callback, (idx,))
-    rospy.Subscriber("depth"+str(n), Image, depth_callback, (n,))
+    rospy.Subscriber("depth", Image, depth_callback)
  
     # rospy.Subscriber('RGB', Image, rgb_callback)
 
     rospy.spin()
          
 if __name__ == "__main__":
-	n = sys.argv[1]
-	master(n)
+	master()
 

@@ -1,0 +1,5 @@
+<launch>
+	<group ns="alpha_system">
+		<node pkg="pipeline_demo" name="n1" type="master" args="1"/>
+	</group>
+</launch>
